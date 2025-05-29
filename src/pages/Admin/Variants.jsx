@@ -1,0 +1,465 @@
+import React, { useEffect, useState, useRef } from "react";
+import {
+  Table,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Select,
+  InputNumber,
+  Switch,
+  message,
+  Upload,
+} from "antd";
+import { PlusOutlined, StarFilled, StarOutlined } from "@ant-design/icons";
+import {
+  getAllVariants,
+  createVariant,
+  // updateVariant, deleteVariant, getVariantById (nếu cần)
+} from "../../Api/variantApi";
+import { getAllProducts } from "../../Api/productApi"; // Thêm dòng này
+import { createProductImage, createProductVariantImages } from "../../Api/productImageApi";
+
+const { Option } = Select;
+
+export default function ProductVariants() {
+  const [variants, setVariants] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [form] = Form.useForm();
+  const [fileList, setFileList] = useState([]);
+  const [autoVariantName, setAutoVariantName] = useState("");
+  const [thumbnailIndex, setThumbnailIndex] = useState(null);
+  const variantNameEdited = useRef(false);
+
+  useEffect(() => {
+    // Fetch sản phẩm từ API
+    const fetchProducts = async () => {
+      try {
+        const data = await getAllProducts();
+        console.log("Fetched products:", data);
+        setProducts(data);
+      } catch (err) {
+        message.error("Không lấy được danh sách sản phẩm");
+      }
+    };
+    fetchProducts();
+
+    // Fetch biến thể từ API
+    const fetchVariants = async () => {
+      try {
+        const data = await getAllVariants();
+        setVariants(data);
+      } catch (err) {
+        message.error("Không lấy được danh sách biến thể");
+      }
+    };
+    fetchVariants();
+  }, []);
+
+  // Theo dõi thay đổi các trường để tự động tạo tên biến thể
+  useEffect(() => {
+    const unsubscribe = form.subscribe?.(({ values }) => {
+      // Không dùng, vì antd Form không có subscribe, dùng onValuesChange bên dưới
+    });
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [form]);
+
+  // Khi mở modal, reset trạng thái chỉnh sửa tên biến thể
+  const handleAdd = () => {
+    setModalOpen(true);
+    setTimeout(() => {
+      form.resetFields();
+    }, 0);
+    setFileList([]);
+    variantNameEdited.current = false;
+    setAutoVariantName("");
+    setThumbnailIndex(null);
+  };
+
+  // Theo dõi thay đổi các trường liên quan để tự động cập nhật tên biến thể
+  const handleFormValuesChange = (changedValues, allValues) => {
+    // Nếu admin đã chỉnh sửa tên biến thể thì không tự động nữa
+    if ("variant_name" in changedValues) {
+      variantNameEdited.current = true;
+      return;
+    }
+    const { product_id, color, storage_capacity } = allValues;
+    if (product_id && color && storage_capacity && !variantNameEdited.current) {
+      const productName = products.find((p) => p.id === product_id)?.Name || "";
+      const autoName = `${productName} ${color} ${storage_capacity}`;
+      setAutoVariantName(autoName);
+      form.setFieldsValue({ variant_name: autoName });
+    }
+  };
+
+  // Hàm upload ảnh lên server, trả về object ảnh đã upload thành công
+  const handleCustomRequest = async ({ file, onSuccess, onError }) => {
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      // Pass null as productVariantId for now (since variant not created yet)
+      const data = await createProductImage(formData);
+
+      // Giả sử backend trả về { imageUrl: "uploads/abc.jpg" }
+      onSuccess({ url: `http://localhost:3000/${data.imageUrl}` }, file);
+    } catch (err) {
+      onError(err);
+      message.error("Tải ảnh lên thất bại");
+    }
+  };
+
+  // Khi upload xong, cập nhật fileList với url từ server
+  const handleUploadChange = ({ fileList: newFileList }) => {
+    if (newFileList.length > 10) {
+      message.warning("Chỉ được phép tải lên tối đa 10 hình ảnh!");
+      return;
+    }
+    setFileList(
+      newFileList.map((file) => {
+        // Nếu đã upload thành công thì dùng url từ response
+        if (file.response && file.response.url) {
+          return {
+            ...file,
+            url: file.response.url,
+            name: file.response.url, // hoặc file.response.id nếu muốn lưu id
+          };
+        }
+        return file;
+      })
+    );
+    // Nếu xóa ảnh chính thì reset thumbnailIndex
+    if (
+      thumbnailIndex !== null &&
+      (!newFileList[thumbnailIndex] ||
+        !newFileList.some((f, idx) => idx === thumbnailIndex))
+    ) {
+      setThumbnailIndex(null);
+    }
+  };
+
+  // const handleFinish = async (values) => {
+  //   if (fileList.length > 10) {
+  //     message.error("Chỉ được phép tải lên tối đa 10 hình ảnh!");
+  //     return;
+  //   }
+  //   const productName =
+  //     products.find((p) => p.id === values.product_id)?.Name || "";
+  //   const variantName =
+  //     values.variant_name ||
+  //     `${productName} ${values.color} ${values.storage_capacity}`;
+  //   const newVariant = {
+  //     ...values,
+  //     name: variantName,
+  //     images: fileList.map((file) => file.url || file.name), // lưu url ảnh từ server
+  //     thumbnail:
+  //       thumbnailIndex !== null && fileList[thumbnailIndex]
+  //         ? fileList[thumbnailIndex].url || fileList[thumbnailIndex].name
+  //         : null,
+  //   };
+  //   console.log("New variant data:", newVariant);
+  //   try {
+  //     await createVariant(newVariant);
+  //     message.success("Thêm biến thể thành công!");
+  //     setModalOpen(false);
+  //     // Refetch lại danh sách biến thể
+  //     const data = await getAllVariants();
+  //     setVariants(data);
+  //   } catch (err) {
+  //     message.error("Không thể thêm biến thể mới!");
+  //   }
+  // };
+
+  const handleFinish = async (values) => {
+  if (fileList.length > 10) {
+    message.error("Chỉ được phép tải lên tối đa 10 hình ảnh!");
+    return;
+  }
+  const productName =
+    products.find((p) => p.id === values.product_id)?.Name || "";
+  const variantName =
+    values.variant_name ||
+    `${productName} ${values.color} ${values.storage_capacity}`;
+  // Tạo object chỉ chứa thông tin biến thể
+  const newVariant = {
+    ...values,
+    name: variantName,
+    // KHÔNG gửi images và thumbnail ở đây
+  };
+  try {
+    // 1. Tạo biến thể trước
+    const variantRes = await createVariant(newVariant);
+    const variantId = variantRes.id || variantRes.insertId; // tuỳ backend trả về
+
+    // 2. Gửi ảnh lên backend với productVariantId vừa tạo
+    if (fileList.length > 0) {
+      
+      await createProductVariantImages({
+        productVariantId: variantId,
+        images: fileList.map((file) => file.url || file.name),
+        thumbnail:
+          thumbnailIndex !== null && fileList[thumbnailIndex]
+            ? fileList[thumbnailIndex].url || fileList[thumbnailIndex].name
+            : null,
+      });
+
+    }
+
+    message.success("Thêm biến thể thành công!");
+    setModalOpen(false);
+    // Refetch lại danh sách biến thể
+    const data = await getAllVariants();
+    setVariants(data);
+  } catch (err) {
+    message.error("Không thể thêm biến thể mới!");
+  }
+};
+
+  const columns = [
+    { title: "Tên biến thể", dataIndex: "name", key: "name" },
+    {
+      title: "Tên sản phẩm",
+      dataIndex: "Name",
+      render: (id) => products.find((p) => p.id === id)?.Name || "",
+    },
+    { title: "Màu", dataIndex: "color", key: "color" },
+    {
+      title: "Dung lượng",
+      dataIndex: "storage_capacity",
+      key: "storage_capacity",
+    },
+    {
+      title: "Giá (VNĐ)",
+      dataIndex: "price",
+      key: "price",
+      render: (price) => price.toLocaleString(),
+    },
+    { title: "Số lượng", dataIndex: "stock_quantity", key: "stock_quantity" },
+    {
+      title: "Kích hoạt",
+      dataIndex: "isActive",
+      render: (active) => (active ? "✅" : "❌"),
+    },
+    // { title: "Thông số kỹ thuật", dataIndex: "specification", key: "specification" },
+    { title: "Kích thước", dataIndex: "size", key: "size" },
+    {
+      title: "Hình ảnh",
+      dataIndex: "images",
+      key: "images",
+      render: (images, record) =>
+        images && images.length
+          ? images.map((img, idx) => (
+              <span
+                key={
+                  // Use a unique key: if img is an object with id, use it; else use img+idx
+                  typeof img === "object" && img.id
+                    ? img.id
+                    : (typeof img === "string" ? img : "") + "-" + idx
+                }
+                style={{ marginRight: 4, position: "relative" }}
+              >
+                <img
+                  src={typeof img === "string" ? img : ""}
+                  alt=""
+                  width={32}
+                  height={32}
+                  style={{
+                    objectFit: "cover",
+                    border:
+                      record.thumbnail === img
+                        ? "2px solid #faad14"
+                        : "1px solid #eee",
+                    borderRadius: 4,
+                  }}
+                />
+                {record.thumbnail === img && (
+                  <StarFilled
+                    style={{
+                      color: "#faad14",
+                      position: "absolute",
+                      top: -8,
+                      right: -8,
+                    }}
+                    title="Ảnh chính"
+                  />
+                )}
+              </span>
+            ))
+          : "—",
+    },
+  ];
+
+  return (
+    <div className="p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">Biến thể sản phẩm</h2>
+        <Button type="primary" onClick={handleAdd}>
+          Thêm biến thể
+        </Button>
+      </div>
+      <Table dataSource={variants} columns={columns} rowKey="id" />
+
+      <Modal
+        title="Thêm biến thể sản phẩm"
+        open={modalOpen}
+        onCancel={() => setModalOpen(false)}
+        onOk={() => form.submit()}
+        destroyOnHidden
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleFinish}
+          onValuesChange={handleFormValuesChange}
+        >
+          <div style={{ display: "flex", gap: 24 }}>
+            <div style={{ flex: 1 }}>
+              {/* Cột trái */}
+              <Form.Item
+                name="product_id"
+                label="Sản phẩm"
+                rules={[{ required: true }]}
+              >
+                <Select placeholder="Chọn sản phẩm" optionLabelProp="label">
+                  {products
+                    .map((p) => (
+                      <Option key={p.Id} value={p.Id} label={p.Name}>
+                        {p.Name}
+                      </Option>
+                    ))}
+                </Select>
+              </Form.Item>
+              <Form.Item name="name" label="Tên biến thể">
+                <Input
+                  placeholder="Nhập tên biến thể (nếu không nhập sẽ tự động tạo)"
+                  onChange={() => {
+                    variantNameEdited.current = true;
+                  }}
+                />
+              </Form.Item>
+              <Form.Item name="color" label="Màu" rules={[{ required: true }]}>
+                <Input />
+              </Form.Item>
+              <Form.Item
+                name="storage_capacity"
+                label="Dung lượng"
+                rules={[{ required: true }]}
+              >
+                <Input />
+              </Form.Item>
+              <Form.Item
+                name="warranty_period"
+                label="Thời hạn bảo hành"
+                rules={[{ required: true, message: "Chọn thời hạn bảo hành" }]}
+              >
+                <Select placeholder="Chọn thời hạn">
+                  {[6, 12, 18, 24, 30, 36].map((m) => (
+                    <Option key={`warranty-${m}`} value={m}>
+                      {m} tháng
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </div>
+            <div style={{ flex: 1 }}>
+              {/* Cột phải */}
+              <Form.Item
+                name="stock_quantity"
+                label="Số lượng tồn kho"
+                rules={[{ required: true }]}
+              >
+                <InputNumber min={0} className="w-full" />
+              </Form.Item>
+              <Form.Item
+                name="price"
+                label="Giá (VNĐ)"
+                rules={[{ required: true }]}
+              >
+                <InputNumber min={0} className="w-full" />
+              </Form.Item>
+              <Form.Item
+                name="isActive"
+                label="Kích hoạt"
+                valuePropName="checked"
+              >
+                <Switch />
+              </Form.Item>
+              <Form.Item name="specification" label="Thông số kỹ thuật">
+                <Input.TextArea rows={2} placeholder="Nhập thông số kỹ thuật" />
+              </Form.Item>
+              <Form.Item name="size" label="Kích thước">
+                <Input placeholder="Nhập kích thước" />
+              </Form.Item>
+            </div>
+          </div>
+          <Form.Item label="Hình ảnh">
+            <Upload
+              listType="picture-card"
+              fileList={fileList}
+              customRequest={handleCustomRequest}
+              onChange={handleUploadChange}
+              multiple
+              maxCount={10}
+              accept="image/*"
+            >
+              {fileList.length >= 10 ? null : (
+                <div>
+                  <PlusOutlined />
+                  <div style={{ marginTop: 8 }}>Tải lên</div>
+                </div>
+              )}
+            </Upload>
+            <div className="text-xs text-gray-400">Tối đa 10 hình ảnh</div>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+                marginTop: 8,
+              }}
+            >
+              {fileList.map((file, idx) => (
+                <div
+                  key={file.uid}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    border:
+                      thumbnailIndex === idx
+                        ? "2px solid #faad14"
+                        : "1px solid #eee",
+                    borderRadius: 4,
+                    padding: 4,
+                    background: "#fafafa",
+                  }}
+                >
+                  <img
+                    src={file.thumbUrl || ""}
+                    alt=""
+                    width={48}
+                    height={48}
+                    style={{ objectFit: "cover", borderRadius: 4 }}
+                  />
+                  <Button
+                    size="small"
+                    type={thumbnailIndex === idx ? "primary" : "default"}
+                    icon={
+                      thumbnailIndex === idx ? <StarFilled /> : <StarOutlined />
+                    }
+                    style={{ marginTop: 4 }}
+                    onClick={() => setThumbnailIndex(idx)}
+                  >
+                    {thumbnailIndex === idx ? "Ảnh chính" : "Đặt làm ảnh chính"}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
+  );
+}
