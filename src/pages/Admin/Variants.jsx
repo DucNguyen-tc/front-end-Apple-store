@@ -18,15 +18,19 @@ import {
   // updateVariant, deleteVariant, getVariantById (nếu cần)
 } from "../../Api/variantApi";
 import { getAllProducts } from "../../Api/productApi"; // Thêm dòng này
-import { createProductImage, createProductVariantImages } from "../../Api/productImageApi";
+import {
+  createProductImage,
+  createProductVariantImages,
+  getImagesByVariantId,
+} from "../../Api/productImageApi";
 
 const { Option } = Select;
 
 export default function ProductVariants() {
-  const [variants, setVariants] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [form] = Form.useForm();
+  const [variants, setVariants] = useState([]); //Biến thể
+  const [products, setProducts] = useState([]); // Sản phẩm
+  const [modalOpen, setModalOpen] = useState(false); // Kiểm tra đóng mở form
+  const [form] = Form.useForm(); //Form
   const [fileList, setFileList] = useState([]);
   const [autoVariantName, setAutoVariantName] = useState("");
   const [thumbnailIndex, setThumbnailIndex] = useState(null);
@@ -37,7 +41,7 @@ export default function ProductVariants() {
     const fetchProducts = async () => {
       try {
         const data = await getAllProducts();
-        console.log("Fetched products:", data);
+        console.log(data);
         setProducts(data);
       } catch (err) {
         message.error("Không lấy được danh sách sản phẩm");
@@ -57,16 +61,6 @@ export default function ProductVariants() {
     fetchVariants();
   }, []);
 
-  // Theo dõi thay đổi các trường để tự động tạo tên biến thể
-  useEffect(() => {
-    const unsubscribe = form.subscribe?.(({ values }) => {
-      // Không dùng, vì antd Form không có subscribe, dùng onValuesChange bên dưới
-    });
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, [form]);
-
   // Khi mở modal, reset trạng thái chỉnh sửa tên biến thể
   const handleAdd = () => {
     setModalOpen(true);
@@ -82,16 +76,18 @@ export default function ProductVariants() {
   // Theo dõi thay đổi các trường liên quan để tự động cập nhật tên biến thể
   const handleFormValuesChange = (changedValues, allValues) => {
     // Nếu admin đã chỉnh sửa tên biến thể thì không tự động nữa
-    if ("variant_name" in changedValues) {
+    console.log(changedValues);
+    console.log(allValues);
+    if ("name" in changedValues) {
       variantNameEdited.current = true;
       return;
     }
     const { product_id, color, storage_capacity } = allValues;
     if (product_id && color && storage_capacity && !variantNameEdited.current) {
-      const productName = products.find((p) => p.id === product_id)?.Name || "";
+      const productName = products.find((p) => p.Id === product_id)?.Name || "";
       const autoName = `${productName} ${color} ${storage_capacity}`;
       setAutoVariantName(autoName);
-      form.setFieldsValue({ variant_name: autoName });
+      form.setFieldsValue({ name: autoName });
     }
   };
 
@@ -140,90 +136,56 @@ export default function ProductVariants() {
     }
   };
 
-  // const handleFinish = async (values) => {
-  //   if (fileList.length > 10) {
-  //     message.error("Chỉ được phép tải lên tối đa 10 hình ảnh!");
-  //     return;
-  //   }
-  //   const productName =
-  //     products.find((p) => p.id === values.product_id)?.Name || "";
-  //   const variantName =
-  //     values.variant_name ||
-  //     `${productName} ${values.color} ${values.storage_capacity}`;
-  //   const newVariant = {
-  //     ...values,
-  //     name: variantName,
-  //     images: fileList.map((file) => file.url || file.name), // lưu url ảnh từ server
-  //     thumbnail:
-  //       thumbnailIndex !== null && fileList[thumbnailIndex]
-  //         ? fileList[thumbnailIndex].url || fileList[thumbnailIndex].name
-  //         : null,
-  //   };
-  //   console.log("New variant data:", newVariant);
-  //   try {
-  //     await createVariant(newVariant);
-  //     message.success("Thêm biến thể thành công!");
-  //     setModalOpen(false);
-  //     // Refetch lại danh sách biến thể
-  //     const data = await getAllVariants();
-  //     setVariants(data);
-  //   } catch (err) {
-  //     message.error("Không thể thêm biến thể mới!");
-  //   }
-  // };
-
   const handleFinish = async (values) => {
-  if (fileList.length > 10) {
-    message.error("Chỉ được phép tải lên tối đa 10 hình ảnh!");
-    return;
-  }
-  const productName =
-    products.find((p) => p.id === values.product_id)?.Name || "";
-  const variantName =
-    values.variant_name ||
-    `${productName} ${values.color} ${values.storage_capacity}`;
-  // Tạo object chỉ chứa thông tin biến thể
-  const newVariant = {
-    ...values,
-    name: variantName,
-    // KHÔNG gửi images và thumbnail ở đây
-  };
-  try {
-    // 1. Tạo biến thể trước
-    const variantRes = await createVariant(newVariant);
-    const variantId = variantRes.id || variantRes.insertId; // tuỳ backend trả về
-
-    // 2. Gửi ảnh lên backend với productVariantId vừa tạo
-    if (fileList.length > 0) {
-      
-      await createProductVariantImages({
-        productVariantId: variantId,
-        images: fileList.map((file) => file.url || file.name),
-        thumbnail:
-          thumbnailIndex !== null && fileList[thumbnailIndex]
-            ? fileList[thumbnailIndex].url || fileList[thumbnailIndex].name
-            : null,
-      });
-
+    if (fileList.length > 10) {
+      message.error("Chỉ được phép tải lên tối đa 10 hình ảnh!");
+      return;
     }
+    const productName =
+      products.find((p) => p.id === values.product_id)?.Name || "";
+    const variantName =
+      values.variant_name ||
+      `${productName} ${values.color} ${values.storage_capacity}`;
+    // Tạo object chỉ chứa thông tin biến thể
+    const newVariant = {
+      ...values,
+      name: variantName,
+      // KHÔNG gửi images và thumbnail ở đây
+    };
+    try {
+      // 1. Tạo biến thể trước
+      const variantRes = await createVariant(newVariant);
+      const variantId = variantRes.id || variantRes.insertId; // tuỳ backend trả về
 
-    message.success("Thêm biến thể thành công!");
-    setModalOpen(false);
-    // Refetch lại danh sách biến thể
-    const data = await getAllVariants();
-    setVariants(data);
-  } catch (err) {
-    message.error("Không thể thêm biến thể mới!");
-  }
-};
+      // 2. Gửi ảnh lên backend với productVariantId vừa tạo
+      if (fileList.length > 0) {
+        await createProductVariantImages({
+          productVariantId: variantId,
+          images: fileList.map((file) => file.url || file.name),
+          thumbnail:
+            thumbnailIndex !== null && fileList[thumbnailIndex]
+              ? fileList[thumbnailIndex].url || fileList[thumbnailIndex].name
+              : null,
+        });
+      }
+
+      message.success("Thêm biến thể thành công!");
+      setModalOpen(false);
+      // Refetch lại danh sách biến thể
+      const data = await getAllVariants();
+      setVariants(data);
+    } catch (err) {
+      message.error("Không thể thêm biến thể mới!");
+    }
+  };
 
   const columns = [
     { title: "Tên biến thể", dataIndex: "name", key: "name" },
-    {
-      title: "Tên sản phẩm",
-      dataIndex: "Name",
-      render: (id) => products.find((p) => p.id === id)?.Name || "",
-    },
+    // {
+    //   title: "Tên sản phẩm",
+    //   dataIndex: "Name",
+    //   render: (id) => products.find((p) => p.id === id)?.Name || "",
+    // },
     { title: "Màu", dataIndex: "color", key: "color" },
     {
       title: "Dung lượng",
@@ -236,7 +198,7 @@ export default function ProductVariants() {
       key: "price",
       render: (price) => price.toLocaleString(),
     },
-    { title: "Số lượng", dataIndex: "stock_quantity", key: "stock_quantity" },
+    //    { title: "Số lượng", dataIndex: "stock_quantity", key: "stock_quantity" },
     {
       title: "Kích hoạt",
       dataIndex: "isActive",
@@ -246,48 +208,10 @@ export default function ProductVariants() {
     { title: "Kích thước", dataIndex: "size", key: "size" },
     {
       title: "Hình ảnh",
-      dataIndex: "images",
-      key: "images",
-      render: (images, record) =>
-        images && images.length
-          ? images.map((img, idx) => (
-              <span
-                key={
-                  // Use a unique key: if img is an object with id, use it; else use img+idx
-                  typeof img === "object" && img.id
-                    ? img.id
-                    : (typeof img === "string" ? img : "") + "-" + idx
-                }
-                style={{ marginRight: 4, position: "relative" }}
-              >
-                <img
-                  src={typeof img === "string" ? img : ""}
-                  alt=""
-                  width={32}
-                  height={32}
-                  style={{
-                    objectFit: "cover",
-                    border:
-                      record.thumbnail === img
-                        ? "2px solid #faad14"
-                        : "1px solid #eee",
-                    borderRadius: 4,
-                  }}
-                />
-                {record.thumbnail === img && (
-                  <StarFilled
-                    style={{
-                      color: "#faad14",
-                      position: "absolute",
-                      top: -8,
-                      right: -8,
-                    }}
-                    title="Ảnh chính"
-                  />
-                )}
-              </span>
-            ))
-          : "—",
+      dataIndex: "thumbnail_url",
+      key: "thumbnail_url",
+      render: (url) =>
+        url ? <img src={url} alt="Ảnh chính" width={100}/> : "—",
     },
   ];
 
@@ -323,21 +247,12 @@ export default function ProductVariants() {
                 rules={[{ required: true }]}
               >
                 <Select placeholder="Chọn sản phẩm" optionLabelProp="label">
-                  {products
-                    .map((p) => (
-                      <Option key={p.Id} value={p.Id} label={p.Name}>
-                        {p.Name}
-                      </Option>
-                    ))}
+                  {products.map((p) => (
+                    <Option key={p.Id} value={p.Id} label={p.Name}>
+                      {p.Name}
+                    </Option>
+                  ))}
                 </Select>
-              </Form.Item>
-              <Form.Item name="name" label="Tên biến thể">
-                <Input
-                  placeholder="Nhập tên biến thể (nếu không nhập sẽ tự động tạo)"
-                  onChange={() => {
-                    variantNameEdited.current = true;
-                  }}
-                />
               </Form.Item>
               <Form.Item name="color" label="Màu" rules={[{ required: true }]}>
                 <Input />
@@ -362,9 +277,20 @@ export default function ProductVariants() {
                   ))}
                 </Select>
               </Form.Item>
+              <Form.Item name="name" label="Tên biến thể">
+                <Input
+                  placeholder="Nhập tên biến thể (nếu không nhập sẽ tự động tạo)"
+                  onChange={() => {
+                    variantNameEdited.current = true;
+                  }}
+                />
+              </Form.Item>
             </div>
             <div style={{ flex: 1 }}>
               {/* Cột phải */}
+              <Form.Item name="size" label="Kích thước">
+                <Input placeholder="Nhập kích thước" />
+              </Form.Item>
               <Form.Item
                 name="stock_quantity"
                 label="Số lượng tồn kho"
@@ -388,9 +314,6 @@ export default function ProductVariants() {
               </Form.Item>
               <Form.Item name="specification" label="Thông số kỹ thuật">
                 <Input.TextArea rows={2} placeholder="Nhập thông số kỹ thuật" />
-              </Form.Item>
-              <Form.Item name="size" label="Kích thước">
-                <Input placeholder="Nhập kích thước" />
               </Form.Item>
             </div>
           </div>
