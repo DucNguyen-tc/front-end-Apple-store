@@ -10,18 +10,30 @@ import {
   Switch,
   message,
   Upload,
+  Popconfirm,
 } from "antd";
-import { PlusOutlined, StarFilled, StarOutlined } from "@ant-design/icons";
+import {
+  PlusOutlined,
+  StarFilled,
+  StarOutlined,
+  EditOutlined,
+  DeleteOutlined,
+} from "@ant-design/icons";
 import {
   getAllVariants,
   createVariant,
-  // updateVariant, deleteVariant, getVariantById (nếu cần)
+  updateVariant,
+  deleteVariant,
+  getVariantById,
 } from "../../Api/variantApi";
 import { getAllProducts } from "../../Api/productApi"; // Thêm dòng này
 import {
   createProductImage,
   createProductVariantImages,
   getImagesByVariantId,
+  deleteProductImageByVariantID,
+  deleteProductImage,
+  setThumbnailImage
 } from "../../Api/productImageApi";
 
 const { Option } = Select;
@@ -35,6 +47,7 @@ export default function ProductVariants() {
   const [autoVariantName, setAutoVariantName] = useState("");
   const [thumbnailIndex, setThumbnailIndex] = useState(null);
   const variantNameEdited = useRef(false);
+  const [editingVariant, setEditingVariant] = useState(null);
 
   useEffect(() => {
     // Fetch sản phẩm từ API
@@ -71,6 +84,45 @@ export default function ProductVariants() {
     variantNameEdited.current = false;
     setAutoVariantName("");
     setThumbnailIndex(null);
+    setEditingVariant(null);
+  };
+
+  // Xử lý khi bấm nút "Sửa"
+  const handleEdit = async (variant) => {
+    setEditingVariant(variant);
+    // Lấy ảnh của biến thể nếu cần
+    let images = [];
+    try {
+      images = await getImagesByVariantId(variant.id);
+    } catch {}
+    // Map lại fileList cho Upload
+    setFileList(
+      images.map((img, idx) => {
+        // Nếu image_url là đường dẫn tương đối, thêm domain
+        console.log(img)
+        let imgUrl = img.imageUrl || img.url || "";
+        if (imgUrl && !/^https?:\/\//.test(imgUrl)) {
+          imgUrl = `http://localhost:3000/${imgUrl.replace(/^\/+/, "")}`;
+        }
+        return {
+          uid: img.id ? String(img.id) : `-${idx}`,
+          name: imgUrl,
+          status: "done",
+          url: imgUrl,
+          thumbUrl: imgUrl,
+        };
+      })
+    );
+    setThumbnailIndex(
+      images.findIndex((img) => img.is_thumbnail || img.isThumbnail)
+    );
+    form.setFieldsValue({
+      ...variant,
+      name: variant.name,
+      // Nếu cần map lại các trường khác
+    });
+    setModalOpen(true);
+    variantNameEdited.current = true;
   };
 
   // Theo dõi thay đổi các trường liên quan để tự động cập nhật tên biến thể
@@ -136,48 +188,174 @@ export default function ProductVariants() {
     }
   };
 
+  // Cập nhật handleFinish để xử lý cập nhật biến thể
   const handleFinish = async (values) => {
     if (fileList.length > 10) {
       message.error("Chỉ được phép tải lên tối đa 10 hình ảnh!");
       return;
     }
+    console.log(fileList)
     const productName =
-      products.find((p) => p.id === values.product_id)?.Name || "";
+      products.find((p) => p.id === values.product_id)?.Name ||
+      products.find((p) => p.Id === values.product_id)?.Name ||
+      "";
     const variantName =
-      values.variant_name ||
+      values.name ||
       `${productName} ${values.color} ${values.storage_capacity}`;
-    // Tạo object chỉ chứa thông tin biến thể
     const newVariant = {
       ...values,
       name: variantName,
-      // KHÔNG gửi images và thumbnail ở đây
     };
     try {
-      // 1. Tạo biến thể trước
-      const variantRes = await createVariant(newVariant);
-      const variantId = variantRes.id || variantRes.insertId; // tuỳ backend trả về
+      if (editingVariant) {
+        // Cập nhật biến thể
+        await updateVariant(editingVariant.id, newVariant);
 
-      // 2. Gửi ảnh lên backend với productVariantId vừa tạo
-      if (fileList.length > 0) {
-        await createProductVariantImages({
-          productVariantId: variantId,
-          images: fileList.map((file) => file.url || file.name),
-          thumbnail:
-            thumbnailIndex !== null && fileList[thumbnailIndex]
-              ? fileList[thumbnailIndex].url || fileList[thumbnailIndex].name
-              : null,
-        });
+        // Lấy danh sách ảnh cũ từ server
+        const oldImages = await getImagesByVariantId(editingVariant.id);
+        const oldImageUrls = oldImages.map((img) => img.imageUrl || img.url);
+        const newImageUrls = fileList.map((file) => file.url || file.name);
+
+        // Xác định thumbnail mới
+        const thumbnailUrl =
+          thumbnailIndex !== null && fileList[thumbnailIndex]
+            ? fileList[thumbnailIndex].url || fileList[thumbnailIndex].name
+            : null;
+
+        // Thumbnail cũ
+        const oldThumbnail = oldImages.find(
+          (img) => img.is_thumbnail || img.isThumbnail
+        );
+        const oldThumbnailUrl = oldThumbnail
+          ? oldThumbnail.imageUrl || oldThumbnail.url
+          : null;
+
+        // Nếu danh sách ảnh hoặc thumbnail thay đổi thì cập nhật lại ảnh
+        const isImageChanged =
+          oldImageUrls.length !== newImageUrls.length ||
+          oldImageUrls.some((url, idx) => url !== newImageUrls[idx]);
+        const isThumbnailChanged = oldThumbnailUrl !== thumbnailUrl;
+
+        console.log("thumb", isThumbnailChanged)
+
+        if (isImageChanged || isThumbnailChanged) {
+          //Xóa toàn bộ ảnh cũ
+          // if (oldImages.length > 0) {
+          //   await deleteProductImageByVariantID(editingVariant.id);
+          // }
+          const deletedImages = oldImages.filter(img => !newImageUrls.includes(img.imageUrl));
+            for (const img of deletedImages) {
+              await deleteProductImage(img.id);
+            }
+          // Lưu lại ảnh mới nếu có
+          // if (newImageUrls.length > 0) {
+          //   await createProductVariantImages({
+          //     productVariantId: editingVariant.id,
+          //     images: newImageUrls,
+          //     thumbnail: thumbnailUrl,
+          //   });
+          // }
+          const newlyAddedImages = newImageUrls.filter(
+            (url) => !oldImageUrls.includes(url)
+          );
+          
+          if (thumbnailUrl) {
+              console.log("Hello",thumbnailUrl)
+              console.log("editting", editingVariant.id)
+               await setThumbnailImage({
+                VariantId: editingVariant.id,
+                thumbnailUrl,
+          });
+          }
+          if (newlyAddedImages.length > 0) {
+            await createProductVariantImages({
+              productVariantId: editingVariant.id,
+              images: newlyAddedImages,
+             // thumbnail: thumbnailUrl,
+            });
+
+            if (thumbnailUrl) {
+               await setThumbnailImage({
+                productVariantId: editingVariant.id,
+                thumbnailUrl,
+          });
+          }
+          }
+
+        }
+
+
+        message.success("Cập nhật biến thể thành công!");
+      } else {
+        // Thêm mới
+        const variantRes = await createVariant(newVariant);
+        const variantId = variantRes.id || variantRes.insertId;
+        if (fileList.length > 0) {
+          await createProductVariantImages({
+            productVariantId: variantId,
+            images: fileList.map((file) => file.url || file.name),
+            thumbnail:
+              thumbnailIndex !== null && fileList[thumbnailIndex]
+                ? fileList[thumbnailIndex].url || fileList[thumbnailIndex].name
+                : null,
+          });
+        }
+        message.success("Thêm biến thể thành công!");
       }
-
-      message.success("Thêm biến thể thành công!");
       setModalOpen(false);
+      setEditingVariant(null);
+      form.resetFields();
+
       // Refetch lại danh sách biến thể
       const data = await getAllVariants();
       setVariants(data);
     } catch (err) {
-      message.error("Không thể thêm biến thể mới!");
+      message.error(
+        editingVariant
+          ? "Không thể cập nhật biến thể!"
+          : "Không thể thêm biến thể mới!"
+      );
     }
   };
+
+  const DeleteVariant = async (id) => {
+    try {
+      const image = await getImagesByVariantId(id);
+      console.log(image);
+      if (image.length > 0) await deleteProductImageByVariantID(id);
+
+      await deleteVariant(id);
+      setVariants(variants.filter((cat) => cat.id !== id));
+      message.success("Xoá thành công biến thể");
+    } catch (error) {
+      message.error("Không thể xoá biến thể này");
+    }
+  };
+
+  const handleRemoveImage = async (file) => {
+  // Nếu ảnh có id (tức là ảnh cũ trong DB), thì gọi API xoá luôn
+  if (file.uid) {
+    try {
+      await deleteProductImage(file.uid); // mày đã có API này rồi
+      console.log("Hello")
+    } catch (err) {
+      message.error("Không thể xoá ảnh khỏi server");
+      return false; // Ngăn Ant xoá ảnh khỏi fileList nếu backend fail
+    }
+  }
+
+  // Nếu ảnh hiện là thumbnail → reset thumbnailIndex
+  const index = fileList.findIndex((f) => f.uid === file.uid);
+  if (thumbnailIndex === index) {
+    setThumbnailIndex(null); // hoặc gán ảnh khác làm thumbnail
+  }
+
+  // Xoá ảnh khỏi fileList
+  setFileList((prev) => prev.filter((f) => f.uid !== file.uid));
+
+  return true; // Cho Ant biết là ảnh đã được xoá
+};
+
 
   const columns = [
     { title: "Tên biến thể", dataIndex: "name", key: "name" },
@@ -211,7 +389,36 @@ export default function ProductVariants() {
       dataIndex: "thumbnail_url",
       key: "thumbnail_url",
       render: (url) =>
-        url ? <img src={url} alt="Ảnh chính" width={100}/> : "—",
+        url ? <img src={url} alt="Ảnh chính" width={100} /> : "—",
+    },
+    {
+      title: "Hành động",
+      key: "actions",
+      render: (_, record) => (
+        <div className="flex gap-2">
+          <Button
+            icon={<EditOutlined />}
+            className="bg-blue-500 text-white hover:bg-blue-600"
+            onClick={() => handleEdit(record)}
+          >
+            Sửa
+          </Button>
+          <Popconfirm
+            title="Xoá danh mục này?"
+            onConfirm={() => DeleteVariant(record.id)}
+            okText="Xoá"
+            cancelText="Huỷ"
+          >
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              className="hover:bg-red-600 text-white bg-red-500"
+            >
+              Xoá
+            </Button>
+          </Popconfirm>
+        </div>
+      ),
     },
   ];
 
@@ -226,9 +433,15 @@ export default function ProductVariants() {
       <Table dataSource={variants} columns={columns} rowKey="id" />
 
       <Modal
-        title="Thêm biến thể sản phẩm"
+        title={
+          editingVariant ? "Sửa biến thể sản phẩm" : "Thêm biến thể sản phẩm"
+        }
         open={modalOpen}
-        onCancel={() => setModalOpen(false)}
+        onCancel={() => {
+          setModalOpen(false);
+          setEditingVariant(null);
+          form.resetFields();
+        }}
         onOk={() => form.submit()}
         destroyOnHidden
       >
@@ -323,6 +536,7 @@ export default function ProductVariants() {
               fileList={fileList}
               customRequest={handleCustomRequest}
               onChange={handleUploadChange}
+              onRemove={handleRemoveImage}
               multiple
               maxCount={10}
               accept="image/*"

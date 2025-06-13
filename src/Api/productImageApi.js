@@ -68,7 +68,16 @@ export const updateProductImage = async (id, data) => {
 
 // Xoá ảnh sản phẩm (DELETE)
 export const deleteProductImage = async (id) => {
-  const res = await authFetch(`${API_BASE_URL}/product-variant-images/${id}`, {
+  const res = await authFetch(`${API_BASE_URL}/product-variant-images/image/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Không xoá được ảnh sản phẩm");
+  return res.json();
+};
+
+// Xoá ảnh sản phẩm theo VariantID
+export const deleteProductImageByVariantID = async (id) => {
+  const res = await authFetch(`${API_BASE_URL}/product-variant-images/variant/${id}`, {
     method: "DELETE",
   });
   if (!res.ok) throw new Error("Không xoá được ảnh sản phẩm");
@@ -92,7 +101,7 @@ export const getImagesByVariantId = async (variantId) => {
 };
 
 // Đặt ảnh chính
-export const setThumbnailImage = async ({ variantId, imageId }) => {
+export const setThumbnailImage = async ({ VariantId, thumbnailUrl }) => {
   const res = await authFetch(
     `${API_BASE_URL}/product-variant-images/set-thumbnail`,
     {
@@ -100,7 +109,7 @@ export const setThumbnailImage = async ({ variantId, imageId }) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ variantId, imageId }),
+      body: JSON.stringify({ VariantId, thumbnailUrl }),
     }
   );
   if (!res.ok) throw new Error("Không đặt được ảnh chính");
