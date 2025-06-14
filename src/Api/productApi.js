@@ -17,6 +17,13 @@ export const getProductById = async (id) => {
   return res.json()
 }
 
+//Lấy sản phẩm theo categoryID
+export const getProductByCategoryId = async(categoryId) => {
+  const res = await fetch(`${API_BASE_URL}/products/category/${categoryId}`)
+  if (!res.ok) throw new Error('Không lấy được chi tiết sản phẩm')
+  return res.json()
+}
+
 // Thêm sản phẩm (POST)
 export const createProduct = async (data) => {
   const res = await authFetch(`${API_BASE_URL}/products`, {
