@@ -16,6 +16,13 @@ export const getVariantById = async (id) => {
   return res.json();
 };
 
+// Lấy biến thể theo productID
+export const getVariantByProductId = async (id) => {
+  const res = await fetch(`${API_BASE_URL}/product-variants/product/${id}`);
+  if (!res.ok) throw new Error("Không lấy được biến thể");
+  return res.json();
+};
+
 // Tạo biến thể mới
 export const createVariant = async (variantData) => {
   const res = await authFetch(`${API_BASE_URL}/product-variants`, {
