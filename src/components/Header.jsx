@@ -1,5 +1,5 @@
 import { UserOutlined } from "@ant-design/icons";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useContext, useState, useEffect } from "react";
 import { UserContext } from "../stores/UserContext";
 import { getAllProductCategories } from "../Api/productCategoryApi";
@@ -9,9 +9,11 @@ function Header() {
   const { user, logout } = useContext(UserContext);
   const [showAdminMenu, setShowAdminMenu] = useState(false);
   const [categories, setCategories] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
 
-   useEffect(() => {
+  useEffect(() => {
     // Gọi API lấy categories
     const fetchCategories = async () => {
       try {
@@ -25,13 +27,22 @@ function Header() {
     fetchCategories();
   }, []);
 
+  const handleSearch = (e) => {
+    e.preventDefault();
+    navigate(`/?search=${encodeURIComponent(searchTerm)}`);
+  };
+
+  // Lấy search term từ query string
+  const params = new URLSearchParams(location.search);
+  const querySearchTerm = params.get("search")?.toLowerCase() || "";
+
   return (
     <div className="w-full relative z-[200]">
       {/* Top Header */}
       <header className="backdrop-blur-md bg-green-200 shadow-lg rounded-b-2xl border-b border-gray-200 relative z-[150]">
         <div className="flex items-center justify-between h-20 px-10">
           {/* Logo */}
-          <Link to = "/" className="flex items-center space-x-4 outline-0">
+          <Link to="/" className="flex items-center space-x-4 outline-0">
             <img
               src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg"
               alt="Logo"
@@ -44,16 +55,24 @@ function Header() {
           {/* Search */}
           <div className="flex-1 flex justify-center">
             <div className="w-full max-w-lg">
-              <div className="flex shadow-md rounded-xl overflow-hidden bg-white/80">
+              <form
+                onSubmit={handleSearch}
+                className="flex shadow-md rounded-xl overflow-hidden bg-white/80"
+              >
                 <input
                   type="text"
                   placeholder="Hôm nay bạn muốn tìm kiếm gì?"
                   className="w-full px-5 py-3 bg-transparent text-base focus:outline-none"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                <button className="bg-green-700 text-white px-6 font-semibold hover:bg-green-500 transition-all rounded-lg shadow-md">
+                <button
+                  type="submit"
+                  className="bg-green-700 text-white px-6 font-semibold hover:bg-green-500 transition-all rounded-lg shadow-md"
+                >
                   Tìm kiếm
                 </button>
-              </div>
+              </form>
             </div>
           </div>
           {/* Actions */}

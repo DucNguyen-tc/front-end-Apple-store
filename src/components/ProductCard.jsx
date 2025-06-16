@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { getVariantById } from "../Api/variantApi";
+import { useCartStore } from "../stores/cartStore";
+import { UserContext } from "../stores/UserContext";
 
-const Card = ({ name, price, final_price, total_discount, thumbnail_url, storage_capacity, color }) => {
+const Card = ({ name, price, final_price, total_discount, thumbnail_url, storage_capacity, color, onAddToCart, isAdded }) => {
   const isDiscounted = parseFloat(total_discount) > 0;
 
   return (
@@ -32,10 +34,11 @@ const Card = ({ name, price, final_price, total_discount, thumbnail_url, storage
       </div>
 
       <button
-        onClick={() => console.log("Đã thêm vào giỏ")}
+        onClick={onAddToCart}
         className="block w-full bg-transparent border border-white text-white py-2 rounded-lg hover:bg-white hover:text-black transition"
+        disabled={isAdded}
       >
-        Thêm vào giỏ hàng
+        {isAdded ? "Đã thêm vào giỏ hàng" : "Thêm vào giỏ hàng"}
       </button>
     </div>
   );
@@ -44,6 +47,9 @@ const Card = ({ name, price, final_price, total_discount, thumbnail_url, storage
 const ProductCard = ({ variantId }) => {
   const [variant, setVariant] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [added, setAdded] = useState(false);
+  const addItem = useCartStore((state) => state.addItem);
+  const { user } = useContext(UserContext);
 
   useEffect(() => {
     if (!variantId) return;
@@ -61,6 +67,20 @@ const ProductCard = ({ variantId }) => {
     fetchVariant();
   }, [variantId]);
 
+  const handleAddToCart = async () => {
+    if (!user || !user.id) {
+      alert("Bạn cần đăng nhập để thêm vào giỏ hàng!");
+      return;
+    }
+    try {
+      await addItem(user.id, variantId, 1);
+      setAdded(true);
+      setTimeout(() => setAdded(false), 1500);
+    } catch (error) {
+      alert("Có lỗi khi thêm vào giỏ hàng!", error);
+    }
+  };
+
   if (loading) return <div className="text-black">Đang tải...</div>;
   if (!variant) return <div className="text-red-400">Không tìm thấy biến thể</div>;
 
@@ -73,6 +93,8 @@ const ProductCard = ({ variantId }) => {
       thumbnail_url={variant.thumbnail_url}
       storage_capacity={variant.storage_capacity}
       color={variant.color}
+      onAddToCart={handleAddToCart}
+      isAdded={added}
     />
   );
 };

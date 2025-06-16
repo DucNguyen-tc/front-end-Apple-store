@@ -46,9 +46,18 @@ const ProductPage = () => {
 
   return (
     <div className="bg-white px-6 py-10 min-h-screen">
-      <h1 className="text-3xl font-bold capitalize mb-8">
-        {name ? name : "Không tìm thấy danh mục"}
-      </h1>
+      <div className="flex flex-col items-center justify-center mb-8">
+        <div className="flex items-center gap-4">
+          <img
+            src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg"
+            alt="Logo"
+            className="h-12 w-12 drop-shadow-lg"
+          />
+          <h1 className="text-3xl font-bold capitalize">
+            {name ? name : "Không tìm thấy danh mục"}
+          </h1>
+        </div>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {variantIds.map((variantId) => (
           <ProductCard key={variantId} variantId={variantId} />
