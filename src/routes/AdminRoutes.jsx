@@ -11,6 +11,8 @@ import Variants from "../pages/Admin/Variants";
 import Promotion from "../pages/Admin/Promotion";
 import Stores from "../pages/Admin/Stores";
 import Article from "../pages/Admin/Article";
+import ProductPromotion from "../pages/Admin/ProductPromotion";
+import Order from "../pages/Admin/Order";
 
 export default function AdminRoutes() {
   const { user, loading } = useContext(UserContext);
@@ -32,6 +34,8 @@ export default function AdminRoutes() {
         <Route path="stores" element={<Stores />} />
         <Route path="articles" element={<Article />} />
         <Route path="users" element={<Users />} />
+        <Route path="product-promotions" element={<ProductPromotion />} />
+        <Route path="orders" element={<Order />} />
       </Route>
     </Routes>
   );
