@@ -67,9 +67,19 @@ function Sidebar() {
       label: <Link to="/admin/stores">Quản lý cửa hàng</Link>,
     },
     {
-      key: "/admin/promotions",
+      key: "promotions",
       icon: <TagsOutlined />,
       label: <Link to="/admin/promotions">Quản lý khuyến mãi</Link>,
+      children: [
+        {
+          key: "/admin/promotions",
+          label: <Link to="/admin/promotions">Danh sách khuyến mãi</Link>,
+        },
+        {
+          key: "/admin/variants",
+          label: <Link to="/admin/product-promotions">Sản phẩm khuyến mãi</Link>,
+        },
+      ],
     },
   ];
 
