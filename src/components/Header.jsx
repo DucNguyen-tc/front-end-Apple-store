@@ -1,12 +1,28 @@
 import { ShoppingCartOutlined, UserOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { UserContext } from "../stores/UserContext";
+import { getAllProductCategories } from "../Api/productCategoryApi";
 
 function Header() {
   const { user, logout } = useContext(UserContext);
   const [showAdminMenu, setShowAdminMenu] = useState(false);
+  const [categories, setCategories] = useState([]);
   const navigate = useNavigate();
+
+   useEffect(() => {
+    // Gọi API lấy categories
+    const fetchCategories = async () => {
+      try {
+        const data = await getAllProductCategories();
+        setCategories(data);
+      } catch (error) {
+        console.error("Error fetching categories:", error); // lỗi khi gọi API
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   return (
     <div className="w-full relative z-[200]">
@@ -14,7 +30,7 @@ function Header() {
       <header className="backdrop-blur-md bg-green-200 shadow-lg rounded-b-2xl border-b border-gray-200 relative z-[150]">
         <div className="flex items-center justify-between h-20 px-10">
           {/* Logo */}
-          <div className="flex items-center space-x-4">
+          <Link to = "/" className="flex items-center space-x-4 outline-0">
             <img
               src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg"
               alt="Logo"
@@ -23,7 +39,7 @@ function Header() {
             <h1 className="font-extrabold text-2xl text-gray-800 tracking-tight drop-shadow-sm">
               Apple Store
             </h1>
-          </div>
+          </Link>
           {/* Search */}
           <div className="flex-1 flex justify-center">
             <div className="w-full max-w-lg">
@@ -100,54 +116,16 @@ function Header() {
       <div className="w-full bg-white/80 backdrop-blur-md shadow-sm rounded-b-xl z-[100]">
         <nav className="flex justify-center">
           <ul className="flex flex-wrap gap-6 font-semibold text-base md:text-lg py-3">
-            <li>
-              <Link
-                to="#"
-                className="hover:text-blue-500 transition-colors px-3 py-1 rounded-lg hover:bg-blue-50"
-              >
-                iPhone
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="#"
-                className="hover:text-blue-500 transition-colors px-3 py-1 rounded-lg hover:bg-blue-50"
-              >
-                iPad
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="#"
-                className="hover:text-blue-500 transition-colors px-3 py-1 rounded-lg hover:bg-blue-50"
-              >
-                Mac
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="#"
-                className="hover:text-blue-500 transition-colors px-3 py-1 rounded-lg hover:bg-blue-50"
-              >
-                Tai nghe Apple
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="#"
-                className="hover:text-blue-500 transition-colors px-3 py-1 rounded-lg hover:bg-blue-50"
-              >
-                Apple Watch
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="#"
-                className="hover:text-blue-500 transition-colors px-3 py-1 rounded-lg hover:bg-blue-50"
-              >
-                Phụ kiện Apple
-              </Link>
-            </li>
+            {categories.map((category) => (
+              <li key={category.id}>
+                <Link
+                  to={`/category/${category.name}/${category.id}`}
+                  className="hover:text-blue-500 transition-colors px-3 py-1 rounded-lg hover:bg-blue-50"
+                >
+                  {category.name}
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
       </div>
