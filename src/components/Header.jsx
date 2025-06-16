@@ -1,7 +1,8 @@
-import { ShoppingCartOutlined, UserOutlined } from "@ant-design/icons";
+import { UserOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import { useContext, useState } from "react";
 import { UserContext } from "../stores/UserContext";
+import CartIcon from "./CartIcon";
 
 function Header() {
   const { user, logout } = useContext(UserContext);
@@ -83,15 +84,7 @@ function Header() {
                   </div>
                 )}
               </div>
-              <a
-                href="#"
-                className="relative text-gray-700 hover:text-pink-600 transition-colors"
-              >
-                <ShoppingCartOutlined className="text-3xl" />
-                <span className="absolute -top-2 -right-3 bg-pink-500 text-white text-xs rounded-full px-2 py-0.5 shadow-md">
-                  0
-                </span>
-              </a>
+              <CartIcon />
             </div>
           </div>
         </div>
