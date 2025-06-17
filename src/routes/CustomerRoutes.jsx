@@ -4,6 +4,7 @@ import Home from "../pages/Customer/Home";
 import Login from "../pages/Customer/Login";
 import ProductPage from "../pages/Customer/Product";
 import Cart from "../pages/Customer/Cart";
+import ProductDetail from "../pages/Customer/Productdetail";
 
 function CustomerRoutes() {
   return (
@@ -13,6 +14,7 @@ function CustomerRoutes() {
         <Route path="/login" element={<Login />} />
         <Route path="/category/:name/:id" element={<ProductPage />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/product/:id" element={<ProductDetail />} />
       </Route>
     </Routes>
   );

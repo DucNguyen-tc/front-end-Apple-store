@@ -2,12 +2,16 @@ import { useEffect, useState, useContext } from "react";
 import { getVariantById } from "../Api/variantApi";
 import { useCartStore } from "../stores/cartStore";
 import { UserContext } from "../stores/UserContext";
+import { useNavigate } from "react-router-dom";
 
-const Card = ({ name, price, final_price, total_discount, thumbnail_url, storage_capacity, color, onAddToCart, isAdded }) => {
+const Card = ({ name, price, final_price, total_discount, thumbnail_url, storage_capacity, color, onAddToCart, isAdded, onClick }) => {
   const isDiscounted = parseFloat(total_discount) > 0;
 
   return (
-    <div className="bg-[#3f3c3c] text-white p-4 rounded-xl shadow-md  w-full max-w-xs mx-auto transform transition duration-300 hover:scale-105 hover:shadow-xl">
+    <div
+      className="bg-[#3f3c3c] text-white p-4 rounded-xl shadow-md  w-full max-w-xs mx-auto transform transition duration-300 hover:scale-105 hover:shadow-xl cursor-pointer"
+      onClick={onClick}
+    >
       <img
         src={thumbnail_url}
         alt={name}
@@ -34,7 +38,7 @@ const Card = ({ name, price, final_price, total_discount, thumbnail_url, storage
       </div>
 
       <button
-        onClick={onAddToCart}
+        onClick={e => { e.stopPropagation(); onAddToCart(); }}
         className="block w-full bg-transparent border border-white text-white py-2 rounded-lg hover:bg-white hover:text-black transition"
         disabled={isAdded}
       >
@@ -50,6 +54,7 @@ const ProductCard = ({ variantId }) => {
   const [added, setAdded] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
   const { user } = useContext(UserContext);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!variantId) return;
@@ -81,6 +86,12 @@ const ProductCard = ({ variantId }) => {
     }
   };
 
+  const handleCardClick = () => {
+    if (variant && variant.product_id) {
+      navigate(`/product/${variant.product_id}`);
+    }
+  };
+
   if (loading) return <div className="text-black">Đang tải...</div>;
   if (!variant) return <div className="text-red-400">Không tìm thấy biến thể</div>;
 
@@ -93,8 +104,10 @@ const ProductCard = ({ variantId }) => {
       thumbnail_url={variant.thumbnail_url}
       storage_capacity={variant.storage_capacity}
       color={variant.color}
+      product_id={variant.product_id}
       onAddToCart={handleAddToCart}
       isAdded={added}
+      onClick={handleCardClick}
     />
   );
 };
