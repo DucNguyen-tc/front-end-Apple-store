@@ -24,14 +24,36 @@ export const getVariantByProductId = async (id) => {
 };
 
 // Tạo biến thể mới
+// export const createVariant = async (variantData) => {
+//   const res = await authFetch(`${API_BASE_URL}/product-variants`, {
+//     method: "POST",
+//     body: JSON.stringify(variantData),
+//   });
+//   if (!res.ok) throw new Error("Không thể tạo biến thể mới");
+//   return res.json();
+// };
 export const createVariant = async (variantData) => {
   const res = await authFetch(`${API_BASE_URL}/product-variants`, {
     method: "POST",
     body: JSON.stringify(variantData),
   });
-  if (!res.ok) throw new Error("Không thể tạo biến thể mới");
+
+  if (!res.ok) {
+    let errorMessage = "Không thể tạo biến thể mới";
+
+    try {
+      const data = await res.json();
+      if (data?.message) errorMessage = data.message;
+    } catch (_) {
+      // nếu không parse được JSON thì giữ nguyên message mặc định
+    }
+
+    throw new Error(errorMessage);
+  }
+
   return res.json();
 };
+
 
 // Cập nhật biến thể
 export const updateVariant = async (id, variantData) => {

@@ -210,7 +210,8 @@ export default function ProductDetail() {
               {(parseFloat(selectedVariant.total_discount) > 0
                 ? parseFloat(selectedVariant.final_price)
                 : parseFloat(selectedVariant.price)
-              ).toLocaleString()}₫
+              ).toLocaleString()}
+              ₫
             </span>
             {parseFloat(selectedVariant.total_discount) > 0 && (
               <span className="text-gray-400 line-through text-lg">
