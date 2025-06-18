@@ -26,8 +26,13 @@ export default function Home() {
   const params = new URLSearchParams(location.search);
   const searchTerm = params.get("search")?.toLowerCase() || "";
 
+  // Lọc sản phẩm theo searchTerm
+  const filteredVariants = variantId.filter((item) =>
+    item.name?.toLowerCase().includes(searchTerm)
+  );
+
   // Sắp xếp các sản phẩm có tên chứa searchTerm lên đầu
-  const sortedVariants = [...variantId].sort((a, b) => {
+  const sortedVariants = [...filteredVariants].sort((a, b) => {
     const aMatch = a.name?.toLowerCase().includes(searchTerm);
     const bMatch = b.name?.toLowerCase().includes(searchTerm);
     if (aMatch === bMatch) return 0;
@@ -51,6 +56,11 @@ export default function Home() {
           <ProductCard key={item.id} variantId={item.id} />
         ))}
       </div>
+      {sortedVariants.length === 0 && searchTerm && (
+        <div className="text-center text-red-500 text-lg py-8">
+          Không tìm thấy sản phẩm "{searchTerm}"
+        </div>
+      )}
     </div>
   );
 }

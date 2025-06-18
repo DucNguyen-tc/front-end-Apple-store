@@ -75,6 +75,7 @@ function Header() {
               </form>
             </div>
           </div>
+          
           {/* Actions */}
           <div>
             <div className="flex items-center space-x-8">

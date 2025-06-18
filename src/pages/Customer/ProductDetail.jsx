@@ -1,7 +1,8 @@
 import { useParams } from "react-router-dom";
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState, useContext, useRef } from "react";
 import { getProductById } from "../../Api/productApi";
 import { getVariantByProductId } from "../../Api/variantApi";
+import { getImagesByVariantId } from "../../Api/productImageApi";
 import { useCartStore } from "../../stores/cartStore";
 import { UserContext } from "../../stores/UserContext";
 
@@ -13,8 +14,11 @@ export default function ProductDetail() {
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [colorOptions, setColorOptions] = useState([]);
+  const [images, setImages] = useState([]);
+  const [currentImage, setCurrentImage] = useState(0);
   const addItem = useCartStore((state) => state.addItem);
   const { user } = useContext(UserContext);
+  const intervalRef = useRef();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -53,6 +57,41 @@ export default function ProductDetail() {
     setSelectedVariant(found || null);
   }, [selectedColor, selectedStorage, variants]);
 
+  // Lấy danh sách ảnh của variant
+  useEffect(() => {
+    if (!selectedVariant) return;
+    console.log('Selected variant for images:', selectedVariant);
+    const fetchImages = async () => {
+      try {
+        const imgs = await getImagesByVariantId(selectedVariant.id);
+        console.log('Images from API:', imgs);
+        const imgUrls = imgs.map((img) => img.url || img.thumbnail_url || img.imageUrl);
+        console.log('Image URLs:', imgUrls);
+        setImages(imgUrls);
+        setCurrentImage(0);
+      } catch (e) {
+        setImages([]);
+      }
+    };
+    fetchImages();
+  }, [selectedVariant]);
+
+  // Tự động chuyển ảnh
+  useEffect(() => {
+    if (images.length <= 1) return;
+    intervalRef.current = setInterval(() => {
+      setCurrentImage((prev) => (prev + 1) % images.length);
+    }, 4000);
+    return () => clearInterval(intervalRef.current);
+  }, [images]);
+
+  const handlePrev = () => {
+    setCurrentImage((prev) => (prev - 1 + images.length) % images.length);
+  };
+  const handleNext = () => {
+    setCurrentImage((prev) => (prev + 1) % images.length);
+  };
+
   const handleAddToCart = async () => {
     if (!user || !user.id) {
       alert("Bạn cần đăng nhập để thêm vào giỏ hàng!");
@@ -73,15 +112,56 @@ export default function ProductDetail() {
     <div className="container mx-auto px-4 py-10 text-gray-800">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Hình ảnh */}
-        <img
-          src={selectedVariant.thumbnail_url}
-          alt={product.name}
-          className="w-full object-contain rounded-xl shadow"
-        />
+        <div className="relative flex flex-col items-center justify-top">
+          {images.length > 0 ? (
+            <>
+              <img
+                src={images[currentImage]}
+                alt={product.name}
+                style={{ width: "800px", height: "500px" }}
+                className="object-cover rounded-xl shadow"
+              />
+              {images.length > 1 && (
+                <>
+                  <button
+                    onClick={handlePrev}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/70 rounded-full p-2 shadow hover:bg-white"
+                  >
+                    &#8592;
+                  </button>
+                  <button
+                    onClick={handleNext}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/70 rounded-full p-2 shadow hover:bg-white"
+                  >
+                    &#8594;
+                  </button>
+                </>
+              )}
+              <div className="flex gap-2 mt-2 justify-center">
+                {images.map((img, idx) => (
+                  <span
+                    key={idx}
+                    className={`inline-block w-3 h-3 rounded-full ${
+                      idx === currentImage ? "bg-black" : "bg-gray-300"
+                    }`}
+                  ></span>
+                ))}
+              </div>
+            </>
+          ) : (
+            <img
+              src={selectedVariant.thumbnail_url}
+              alt={product.name}
+              style={{ width: "800px", height: "500px" }}
+              className="object-cover rounded-xl shadow"
+            />
+          )}
+        </div>
 
         {/* Thông tin sản phẩm */}
         <div>
-          <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
+          {/* {console.log('Product detail:', product)} */}
+          <h1 className="text-3xl font-bold mb-2">{product.Name}</h1>
           <p className="mb-4 text-gray-600">{product.description}</p>
 
           {/* Lựa chọn dung lượng */}

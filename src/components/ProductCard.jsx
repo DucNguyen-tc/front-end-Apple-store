@@ -15,7 +15,7 @@ const Card = ({ name, price, final_price, total_discount, thumbnail_url, storage
       <img
         src={thumbnail_url}
         alt={name}
-        className="w-full h-56 object-contain mb-4"
+        className="w-full h-56 object-cover mb-4 rounded-lg"
         onError={(e) => {
           e.target.src = "https://via.placeholder.com/150";
         }}
@@ -94,6 +94,8 @@ const ProductCard = ({ variantId }) => {
 
   if (loading) return <div className="text-black">Đang tải...</div>;
   if (!variant) return <div className="text-red-400">Không tìm thấy biến thể</div>;
+  if (!variant.isActive) return null; // <-- ĐÂY LÀ ĐOẠN KIỂM TRA isActive
+  // Kiểm tra nếu variant không hoạt động, không render gì cả
 
   return (
     <Card
@@ -105,6 +107,7 @@ const ProductCard = ({ variantId }) => {
       storage_capacity={variant.storage_capacity}
       color={variant.color}
       product_id={variant.product_id}
+      isActive={variant.isActive}
       onAddToCart={handleAddToCart}
       isAdded={added}
       onClick={handleCardClick}

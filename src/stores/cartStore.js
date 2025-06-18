@@ -11,6 +11,7 @@ export const useCartStore = create((set, get) => ({
         set({ loading: true, error: null });
         try {
             const response = await cartApi.getCart(user_id);
+            console.log('Giỏ hàng:', response);
             set({ items: response, loading: false });
         } catch (error) {
             set({ error: error.message, loading: false });
@@ -69,9 +70,11 @@ export const useCartStore = create((set, get) => ({
 
     // Tổng giá trị giỏ hàng
     getTotalPrice: () => {
-        return get().items.reduce(
+        const items = get().items;
+        console.log('Tính tổng giá trị giỏ hàng, items:', items);
+        return items.reduce(
             (total, item) => total + (item.price || 0) * (item.quantity || 0),
             0
         );
     },
-})); 
+}));
