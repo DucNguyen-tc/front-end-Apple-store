@@ -115,7 +115,7 @@ function Sidebar() {
         items={menuItems}
       />
 
-      <div style={{ paddingTop: 290, paddingLeft: 40, borderTop: "1px solid #f0f0f0" }}>
+      <div style={{ marginTop: "auto", paddingLeft: 40, borderTop: "1px solid #f0f0f0", paddingTop: 24 }}>
         <Link to="/" className="text-blue-600 hover:underline">
           <DashboardOutlined style={{ marginRight: 8 }} />
           Về trang khách hàng

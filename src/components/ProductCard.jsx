@@ -15,7 +15,7 @@ const Card = ({ name, price, final_price, total_discount, thumbnail_url, storage
       <img
         src={thumbnail_url}
         alt={name}
-        className="w-full h-56 object-cover mb-4 rounded-lg"
+        className="w-auto h-56 object-cover mb-4 rounded-lg items-center mx-auto"
         onError={(e) => {
           e.target.src = "https://via.placeholder.com/150";
         }}

@@ -118,7 +118,7 @@ export default function ProductDetail() {
               <img
                 src={images[currentImage]}
                 alt={product.name}
-                style={{ width: "800px", height: "500px" }}
+                style={{ width: "auto", height: "500px" }}
                 className="object-cover rounded-xl shadow"
               />
               {images.length > 1 && (
@@ -152,7 +152,7 @@ export default function ProductDetail() {
             <img
               src={selectedVariant.thumbnail_url}
               alt={product.name}
-              style={{ width: "800px", height: "500px" }}
+              style={{ width: "auto", height: "500px" }}
               className="object-cover rounded-xl shadow"
             />
           )}
