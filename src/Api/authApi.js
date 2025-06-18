@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:4000/api";
+const API_BASE_URL = "http://localhost:3000/api";
 
 // Đăng kí
 export const register = async (data) => {
@@ -26,7 +26,7 @@ export const refreshAccessToken = async () => {
   const refreshToken = localStorage.getItem("refreshToken");
   if (!refreshToken) throw new Error("No refresh token found");
 
-  const res = await fetch("http://localhost:4000/api/auth/refresh-token", {
+  const res = await fetch("http://localhost:3000/api/auth/refresh-token", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refreshToken }),

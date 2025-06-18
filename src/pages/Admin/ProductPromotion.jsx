@@ -1,6 +1,7 @@
 // PromotionMapping.jsx
 import { useState, useEffect } from "react";
 import { Card, Checkbox, Input, List, Typography, Select, message } from "antd";
+import dayjs from "dayjs";
 import { GiftOutlined, TagsOutlined } from "@ant-design/icons";
 import { getAllVariants } from "../../Api/variantApi";
 import { getAllProducts } from "../../Api/productApi";
@@ -101,19 +102,19 @@ export default function ProductPromotion() {
     ? selectedVariant
     : filteredVariants[0] || null;
 
-  const togglePromotion = (promoId) => {
-    setMapping((prev) => {
-      const currentPromos = prev[selectedVariant.id] || [];
-      const newPromos = currentPromos.includes(promoId)
-        ? currentPromos.filter((id) => id !== promoId)
-        : [...currentPromos, promoId];
+  // const togglePromotion = (promoId) => {
+  //   setMapping((prev) => {
+  //     const currentPromos = prev[selectedVariant.id] || [];
+  //     const newPromos = currentPromos.includes(promoId)
+  //       ? currentPromos.filter((id) => id !== promoId)
+  //       : [...currentPromos, promoId];
 
-      return {
-        ...prev,
-        [selectedVariant.id]: newPromos,
-      };
-    });
-  };
+  //     return {
+  //       ...prev,
+  //       [selectedVariant.id]: newPromos,
+  //     };
+  //   });
+  // };
 
   return (
     <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -184,68 +185,61 @@ export default function ProductPromotion() {
               Biến thể đang chọn:{" "}
               <span className="text-blue-600">{currentSelected.name}</span>
             </Typography.Text>
-            <div className="mt-4 space-y-4">
-              {promotions.map((promo) => (
-                <div
-                  key={promo.id}
-                  className="flex items-start gap-3 border p-3 rounded-xl hover:shadow-md transition-all"
-                >
-                  <Checkbox
-                    checked={mapping[currentSelected.id]?.includes(promo.id)}
-                    // onChange={() =>
-                    //   setMapping((prev) => {
-                    //     const currentPromos = prev[currentSelected.id] || [];
-                    //     const newPromos = currentPromos.includes(promo.id)
-                    //       ? currentPromos.filter((id) => id !== promo.id)
-                    //       : [...currentPromos, promo.id];
-                    //     return {
-                    //       ...prev,
-                    //       [currentSelected.id]: newPromos,
-                    //     };
-                    //   })
-                    // }
-                    onChange={async () => {
-                      const productVariantId = currentSelected.id;
-                      const promotionId = promo.id;
-                      const isSelected = mapping[productVariantId]?.includes(promotionId);
+            {promotions
+  .filter((promo) => {
+    const now = dayjs();
+    return (
+      promo.isActive &&
+      dayjs(promo.start_date).isBefore(now) &&
+      dayjs(promo.end_date).isAfter(now)
+    );
+  })
+  .map((promo) => (
+    <div
+      key={promo.id}
+      className="flex items-start gap-3 border p-3 rounded-xl hover:shadow-md transition-all"
+    >
+      <Checkbox
+        checked={mapping[currentSelected.id]?.includes(promo.id)}
+        onChange={async () => {
+          const productVariantId = currentSelected.id;
+          const promotionId = promo.id;
+          const isSelected = mapping[productVariantId]?.includes(promotionId);
 
-                      try {
-                        if (isSelected) {
-                          await deleteProductPromotion({productVariantId, promotionId})
-                        } else {
-                          await createProductPromotion({productVariantId, promotionId})
-                        }
+          try {
+            if (isSelected) {
+              await deleteProductPromotion({ productVariantId, promotionId });
+            } else {
+              await createProductPromotion({ productVariantId, promotionId });
+            }
 
-                        // Cập nhật UI
-                        setMapping((prev) => {
-                          const currentPromos = prev[productVariantId] || [];
-                          const newPromos = isSelected
-                            ? currentPromos.filter((id) => id !== promotionId)
-                            : [...currentPromos, promotionId];
-                          return {
-                            ...prev,
-                            [productVariantId]: newPromos,
-                          };
-                        });
+            setMapping((prev) => {
+              const currentPromos = prev[productVariantId] || [];
+              const newPromos = isSelected
+                ? currentPromos.filter((id) => id !== promotionId)
+                : [...currentPromos, promotionId];
+              return {
+                ...prev,
+                [productVariantId]: newPromos,
+              };
+            });
 
-                        message.success(
-                          isSelected ? "Đã gỡ khuyến mãi" : "Đã gắn khuyến mãi"
-                        );
-                      } catch (err) {
-                        console.error(err);
-                        message.error("Có lỗi xảy ra");
-                      }
-                    }}
-                  />
-                  <div>
-                    <div className="font-semibold">{promo.name}</div>
-                    <div className="text-gray-500 text-sm">
-                      {promo.description}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            message.success(
+              isSelected ? "Đã gỡ khuyến mãi" : "Đã gắn khuyến mãi"
+            );
+          } catch (err) {
+            console.error(err);
+            message.error("Có lỗi xảy ra");
+          }
+        }}
+      />
+      <div>
+        <div className="font-semibold">{promo.name}</div>
+        <div className="text-gray-500 text-sm">{promo.description}</div>
+      </div>
+    </div>
+))}
+
           </>
         ) : (
           <Typography.Text type="secondary">

@@ -65,8 +65,9 @@ export default function ProductCategories() {
           }
         } else {
           try {
-            const newCategory = await createProductCategory(values);
-            setCategories([newCategory, ...categories]);
+            await createProductCategory(values);
+            const data = await getAllProductCategories();
+            setCategories(data);
             message.success("Thêm danh mục thành công!");
           } catch (error) {
             const msg =
@@ -180,7 +181,7 @@ export default function ProductCategories() {
             <Input />
           </Form.Item>
 
-          <Form.Item label="Mô tả" name="description">
+          <Form.Item label="Mô tả" name="description" rules={[{ required: true, message: "Không được để trống" }]}>
             <Input.TextArea rows={3} />
           </Form.Item>
         </Form>

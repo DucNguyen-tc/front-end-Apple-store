@@ -20,8 +20,10 @@ const Cart = () => {
     if (error) {
         return <div className="text-red-500 text-center">{error}</div>;
     }
+    console.log(items)
 
     if (items.length === 0) {
+        console.log("items", items)
         return (
             <div className="text-center py-10">
                 <h2 className="text-2xl font-bold mb-4">Your cart is empty</h2>
@@ -48,7 +50,7 @@ const Cart = () => {
                     <div key={item.id} className="flex items-center justify-between border-b pb-4">
                         <div className="flex items-center space-x-4">
                             <img
-                                src={item.image}
+                                src={item.imageUrl}
                                 alt={item.name}
                                 className="w-20 h-20 object-cover rounded"
                             />

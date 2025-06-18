@@ -76,7 +76,8 @@ export default function ProductDetail() {
         <img
           src={selectedVariant.thumbnail_url}
           alt={product.name}
-          className="w-full object-contain rounded-xl shadow"
+          style={{ width: "800px", height: "500px" }}
+          className=" object-contain rounded-xl shadow"
         />
 
         {/* Thông tin sản phẩm */}
@@ -130,7 +131,8 @@ export default function ProductDetail() {
               {(parseFloat(selectedVariant.total_discount) > 0
                 ? parseFloat(selectedVariant.final_price)
                 : parseFloat(selectedVariant.price)
-              ).toLocaleString()}₫
+              ).toLocaleString()}
+              ₫
             </span>
             {parseFloat(selectedVariant.total_discount) > 0 && (
               <span className="text-gray-400 line-through text-lg">

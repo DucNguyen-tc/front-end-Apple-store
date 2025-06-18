@@ -23,12 +23,12 @@ const ProductPage = () => {
         // Lấy id các variant cho từng sản phẩm
         let allVariantIds = [];
         for (const product of productList) {
+          console.log("hihihihihih", product)
           const variants = await getVariantByProductId(product.Id);
           console.log("variant data:", variants);
           if (Array.isArray(variants)) {
             allVariantIds = allVariantIds.concat(variants.map((v) => v.id));
           console.log("allvariant data:", allVariantIds);
-
           }
         }
         setVariantIds(allVariantIds);

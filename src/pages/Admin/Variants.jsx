@@ -11,6 +11,8 @@ import {
   message,
   Upload,
   Popconfirm,
+  Carousel,
+  Descriptions,
 } from "antd";
 import {
   PlusOutlined,
@@ -18,6 +20,8 @@ import {
   StarOutlined,
   EditOutlined,
   DeleteOutlined,
+  LeftOutlined,
+  RightOutlined,
 } from "@ant-design/icons";
 import {
   getAllVariants,
@@ -33,7 +37,7 @@ import {
   getImagesByVariantId,
   deleteProductImageByVariantID,
   deleteProductImage,
-  setThumbnailImage
+  setThumbnailImage,
 } from "../../Api/productImageApi";
 
 const { Option } = Select;
@@ -48,6 +52,7 @@ export default function ProductVariants() {
   const [thumbnailIndex, setThumbnailIndex] = useState(null);
   const variantNameEdited = useRef(false);
   const [editingVariant, setEditingVariant] = useState(null);
+  const [viewingVariant, setViewingVariant] = useState(null);
 
   useEffect(() => {
     // Fetch sản phẩm từ API
@@ -99,7 +104,7 @@ export default function ProductVariants() {
     setFileList(
       images.map((img, idx) => {
         // Nếu image_url là đường dẫn tương đối, thêm domain
-        console.log(img)
+        console.log(img);
         let imgUrl = img.imageUrl || img.url || "";
         if (imgUrl && !/^https?:\/\//.test(imgUrl)) {
           imgUrl = `http://localhost:3000/${imgUrl.replace(/^\/+/, "")}`;
@@ -194,7 +199,7 @@ export default function ProductVariants() {
       message.error("Chỉ được phép tải lên tối đa 10 hình ảnh!");
       return;
     }
-    console.log(fileList)
+    console.log(fileList);
     const productName =
       products.find((p) => p.id === values.product_id)?.Name ||
       products.find((p) => p.Id === values.product_id)?.Name ||
@@ -236,17 +241,19 @@ export default function ProductVariants() {
           oldImageUrls.some((url, idx) => url !== newImageUrls[idx]);
         const isThumbnailChanged = oldThumbnailUrl !== thumbnailUrl;
 
-        console.log("thumb", isThumbnailChanged)
+        console.log("thumb", isThumbnailChanged);
 
         if (isImageChanged || isThumbnailChanged) {
           //Xóa toàn bộ ảnh cũ
           // if (oldImages.length > 0) {
           //   await deleteProductImageByVariantID(editingVariant.id);
           // }
-          const deletedImages = oldImages.filter(img => !newImageUrls.includes(img.imageUrl));
-            for (const img of deletedImages) {
-              await deleteProductImage(img.id);
-            }
+          const deletedImages = oldImages.filter(
+            (img) => !newImageUrls.includes(img.imageUrl)
+          );
+          for (const img of deletedImages) {
+            await deleteProductImage(img.id);
+          }
           // Lưu lại ảnh mới nếu có
           // if (newImageUrls.length > 0) {
           //   await createProductVariantImages({
@@ -258,32 +265,30 @@ export default function ProductVariants() {
           const newlyAddedImages = newImageUrls.filter(
             (url) => !oldImageUrls.includes(url)
           );
-          
+
           if (thumbnailUrl) {
-              console.log("Hello",thumbnailUrl)
-              console.log("editting", editingVariant.id)
-               await setThumbnailImage({
-                VariantId: editingVariant.id,
-                thumbnailUrl,
-          });
+            console.log("Hello", thumbnailUrl);
+            console.log("editting", editingVariant.id);
+            await setThumbnailImage({
+              VariantId: editingVariant.id,
+              thumbnailUrl,
+            });
           }
           if (newlyAddedImages.length > 0) {
             await createProductVariantImages({
               productVariantId: editingVariant.id,
               images: newlyAddedImages,
-             // thumbnail: thumbnailUrl,
+              // thumbnail: thumbnailUrl,
             });
 
             if (thumbnailUrl) {
-               await setThumbnailImage({
+              await setThumbnailImage({
                 productVariantId: editingVariant.id,
                 thumbnailUrl,
-          });
+              });
+            }
           }
-          }
-
         }
-
 
         message.success("Cập nhật biến thể thành công!");
       } else {
@@ -310,11 +315,23 @@ export default function ProductVariants() {
       const data = await getAllVariants();
       setVariants(data);
     } catch (err) {
+//      message.error(err.message);
+      console.error(err)
       message.error(
-        editingVariant
-          ? "Không thể cập nhật biến thể!"
-          : "Không thể thêm biến thể mới!"
-      );
+      err.message ||
+    (editingVariant
+      ? "Không thể cập nhật biến thể!"
+      : "Không thể thêm biến thể mới!")
+);
+    }
+  };
+
+  const handleView = async (variant) => {
+    try {
+      const images = await getImagesByVariantId(variant.id);
+      setViewingVariant({ ...variant, images });
+    } catch {
+      setViewingVariant({ ...variant, images: [] });
     }
   };
 
@@ -333,29 +350,28 @@ export default function ProductVariants() {
   };
 
   const handleRemoveImage = async (file) => {
-  // Nếu ảnh có id (tức là ảnh cũ trong DB), thì gọi API xoá luôn
-  if (file.uid) {
-    try {
-      await deleteProductImage(file.uid); // mày đã có API này rồi
-      console.log("Hello")
-    } catch (err) {
-      message.error("Không thể xoá ảnh khỏi server");
-      return false; // Ngăn Ant xoá ảnh khỏi fileList nếu backend fail
+    // Nếu ảnh có id (tức là ảnh cũ trong DB), thì gọi API xoá luôn
+    if (file.uid) {
+      try {
+        await deleteProductImage(file.uid); // mày đã có API này rồi
+        console.log("Hello");
+      } catch (err) {
+        message.error("Không thể xoá ảnh khỏi server");
+        return false; // Ngăn Ant xoá ảnh khỏi fileList nếu backend fail
+      }
     }
-  }
 
-  // Nếu ảnh hiện là thumbnail → reset thumbnailIndex
-  const index = fileList.findIndex((f) => f.uid === file.uid);
-  if (thumbnailIndex === index) {
-    setThumbnailIndex(null); // hoặc gán ảnh khác làm thumbnail
-  }
+    // Nếu ảnh hiện là thumbnail → reset thumbnailIndex
+    const index = fileList.findIndex((f) => f.uid === file.uid);
+    if (thumbnailIndex === index) {
+      setThumbnailIndex(null); // hoặc gán ảnh khác làm thumbnail
+    }
 
-  // Xoá ảnh khỏi fileList
-  setFileList((prev) => prev.filter((f) => f.uid !== file.uid));
+    // Xoá ảnh khỏi fileList
+    setFileList((prev) => prev.filter((f) => f.uid !== file.uid));
 
-  return true; // Cho Ant biết là ảnh đã được xoá
-};
-
+    return true; // Cho Ant biết là ảnh đã được xoá
+  };
 
   const columns = [
     { title: "Tên biến thể", dataIndex: "name", key: "name" },
@@ -374,7 +390,9 @@ export default function ProductVariants() {
       title: "Giá (VNĐ)",
       dataIndex: "price",
       key: "price",
-      render: (price) => price.toLocaleString(),
+      render: (price) =>
+        Number(price).toLocaleString("vi-VN", { minimumFractionDigits: 0 }) +
+        " đ",
     },
     //    { title: "Số lượng", dataIndex: "stock_quantity", key: "stock_quantity" },
     {
@@ -391,11 +409,46 @@ export default function ProductVariants() {
       render: (url) =>
         url ? <img src={url} alt="Ảnh chính" width={100} /> : "—",
     },
+    // {
+    //   title: "Hành động",
+    //   key: "actions",
+    //   render: (_, record) => (
+    //     <div className="flex gap-2">
+    //       <Button
+    //         icon={<EditOutlined />}
+    //         className="bg-blue-500 text-white hover:bg-blue-600"
+    //         onClick={() => handleEdit(record)}
+    //       >
+    //         Sửa
+    //       </Button>
+    //       <Popconfirm
+    //         title="Xoá danh mục này?"
+    //         onConfirm={() => DeleteVariant(record.id)}
+    //         okText="Xoá"
+    //         cancelText="Huỷ"
+    //       >
+    //         <Button
+    //           danger
+    //           icon={<DeleteOutlined />}
+    //           className="hover:bg-red-600 text-white bg-red-500"
+    //         >
+    //           Xoá
+    //         </Button>
+    //       </Popconfirm>
+    //     </div>
+    //   ),
+    // },
     {
       title: "Hành động",
       key: "actions",
       render: (_, record) => (
         <div className="flex gap-2">
+          <Button
+            onClick={() => handleView(record)}
+            className="bg-gray-500 text-white hover:bg-gray-600"
+          >
+            Xem
+          </Button>
           <Button
             icon={<EditOutlined />}
             className="bg-blue-500 text-white hover:bg-blue-600"
@@ -596,6 +649,119 @@ export default function ProductVariants() {
             </div>
           </Form.Item>
         </Form>
+      </Modal>
+      <Modal
+        title="Chi tiết biến thể"
+        open={!!viewingVariant}
+        onCancel={() => setViewingVariant(null)}
+        footer={<Button onClick={() => setViewingVariant(null)}>Đóng</Button>}
+      >
+        {viewingVariant && (
+          <div>
+            <Descriptions
+              column={1}
+              bordered
+              size="small"
+              style={{ marginBottom: 16 }}
+            >
+              <Descriptions.Item label="Tên biến thể">
+                {viewingVariant.name}
+              </Descriptions.Item>
+              <Descriptions.Item label="Màu">
+                {viewingVariant.color}
+              </Descriptions.Item>
+              <Descriptions.Item label="Dung lượng">
+                {viewingVariant.storage_capacity}
+              </Descriptions.Item>
+              <Descriptions.Item label="Kích thước">
+                {viewingVariant.size}
+              </Descriptions.Item>
+              <Descriptions.Item label="Giá">
+                {Number(viewingVariant.price).toLocaleString("vi-VN")} đ
+              </Descriptions.Item>
+              <Descriptions.Item label="Trạng thái">
+                {viewingVariant.isActive ? "Đang bán" : "Ngừng bán"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Thông số kỹ thuật">
+                {viewingVariant.specification}
+              </Descriptions.Item>
+              <Descriptions.Item label="Giá đang áp dụng khuyến mãi">
+                {Number(viewingVariant.final_price).toLocaleString("vi-VN")} đ
+              </Descriptions.Item>
+            </Descriptions>
+            <div style={{ marginBottom: 8, fontWeight: 500 }}>Hình ảnh:</div>
+            {viewingVariant.images && viewingVariant.images.length > 0 ? (
+              <Carousel
+                dots
+                arrows
+                style={{ maxWidth: 300, margin: "auto", marginBottom: 12 }}
+                prevArrow={<LeftOutlined />}
+                nextArrow={<RightOutlined />}
+              >
+                {viewingVariant.images.map((img, idx) => {
+                  const url = img.imageUrl || img.url || "";
+                  const fullUrl = /^http/.test(url)
+                    ? url
+                    : `http://localhost:3000/${url.replace(/^\/+/, "")}`;
+                  const isThumb = img.is_thumbnail || img.isThumbnail;
+                  return (
+                    <div
+                      key={img.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        height: 240,
+                        borderRadius: 8,
+                        border: isThumb ? "2px solid gold" : "1px solid #333",
+                        padding: 10,
+                        position: "relative",
+                      }}
+                    >
+                      <img
+                        src={fullUrl}
+                        alt=""
+                        style={{
+                          maxWidth: "100%",
+                          maxHeight: "100%",
+                          objectFit: "contain",
+                          borderRadius: 6,
+                          border: isThumb ? "2px solid gold" : "1px solid #666",
+                          boxShadow: isThumb
+                            ? "0 0 6px 2px rgba(255, 215, 0, 0.6)"
+                            : "0 1px 3px rgba(255,255,255,0.1)",
+                        }}
+                      />
+                      {isThumb && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: 8,
+                            left: 8,
+                            background: "gold",
+                            color: "#222",
+                            padding: "2px 8px",
+                            borderRadius: 4,
+                            fontWeight: 600,
+                            fontSize: 13,
+                            boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                        >
+                          <StarFilled style={{ color: "#faad14" }} /> Ảnh chính
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </Carousel>
+            ) : (
+              <div style={{ color: "#888" }}>Không có hình ảnh</div>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   );

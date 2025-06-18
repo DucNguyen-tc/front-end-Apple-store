@@ -155,20 +155,15 @@ export default function Products() {
       title: "Danh mục",
       dataIndex: "ProductCategory_Id",
       key: "ProductCategory_Id",
+      filters: categories.map((cat) => ({
+        text: cat.name,
+        value: cat.id,
+      })),
+      onFilter: (value, record) => record.ProductCategory_Id === value,
       render: (categoryId) => {
         const category = categories.find((cat) => cat.id === categoryId);
         return category ? category.name : "Không xác định";
       },
-    },
-    {
-      title: "Trạng thái",
-      dataIndex: "isActive",
-      key: "isActive",
-      render: (active) => (
-        <span className={active ? "text-green-600" : "text-gray-400"}>
-          {active ? "Đang bán" : "Ngừng bán"}
-        </span>
-      ),
     },
     {
       title: "Hành động",
@@ -258,10 +253,6 @@ export default function Products() {
                 </Option>
               ))}
             </Select>
-          </Form.Item>
-
-          <Form.Item label="Trạng thái" name="isActive" valuePropName="checked">
-            <Switch checkedChildren="Đang bán" unCheckedChildren="Ngừng bán" />
           </Form.Item>
         </Form>
       </Modal>

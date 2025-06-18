@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import {
   Table,
   Button,
@@ -8,9 +8,11 @@ import {
   message,
   Popconfirm,
   Select,
+  Switch,
 } from "antd";
 import { getAllUsers, updateUser, deletedUser } from "../../Api/userApi";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { UserContext } from "../../stores/UserContext";
 
 // src/pages/admin/Users.jsx
 export default function Users() {
@@ -18,6 +20,7 @@ export default function Users() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form] = Form.useForm();
   const [editingUser, setEditingUser] = useState(null);
+  const { user } = useContext(UserContext);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -31,9 +34,13 @@ export default function Users() {
     fetchUsers();
   }, []);
 
-  const openModal = (user = null) => {
-    setEditingUser(user);
-    form.setFieldsValue(user || {});
+  const openModal = (selectedUser = null) => {
+    setEditingUser(selectedUser);
+    if (selectedUser && selectedUser.id === user.id && user.role === "ADMIN") {
+      form.setFieldsValue({ ...selectedUser, role: undefined }); // Không set role
+    } else {
+      form.setFieldsValue(selectedUser || {});
+    }
     setIsModalOpen(true);
   };
 
@@ -67,6 +74,10 @@ export default function Users() {
   };
 
   const deleteUser = async (id) => {
+    if (id === user.id && user.role === "ADMIN") {
+      message.error("Chưa thấy ai tự xoá mình bao giờ");
+      return;
+    }
     try {
       await deletedUser(id);
       setUsers(users.filter((cat) => cat.id !== id));
@@ -96,6 +107,17 @@ export default function Users() {
       title: "Vai trò",
       dataIndex: "role",
       key: "role",
+    },
+    {
+      title: "Hoạt động",
+      dataIndex: "isActive",
+      key: "isActive",
+      render: (active) =>
+        active ? (
+          <span className="text-green-600">Đang hoạt động</span>
+        ) : (
+          <span className="text-gray-400">Ngừng hoạt động</span>
+        ),
     },
     {
       title: "Hành động",
@@ -169,8 +191,22 @@ export default function Users() {
           >
             <Input />
           </Form.Item>
+          <Form.Item
+            label="Hoạt động"
+            name="isActive"
+            valuePropName="checked"
+            initialValue={true}
+          >
+            <Switch
+              checkedChildren="Đang hoạt động"
+              unCheckedChildren="Ngừng hoạt động"
+            />
+          </Form.Item>
           <Form.Item label="Vai trò" name="role">
-            <Select placeholder="Chọn vai trò">
+            <Select
+              placeholder="Chọn vai trò"
+              disabled={editingUser?.id === user.id && user.role === "ADMIN"}
+            >
               <Select.Option value="CUSTOMER">CUSTOMER</Select.Option>
               <Select.Option value="ADMIN">ADMIN</Select.Option>
             </Select>
