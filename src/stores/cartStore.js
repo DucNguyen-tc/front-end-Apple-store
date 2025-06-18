@@ -12,6 +12,7 @@ export const useCartStore = create((set, get) => ({
         try {
             const response = await cartApi.getCart(user_id);
             set({ items: response, loading: false });
+            console.log(response);
         } catch (error) {
             set({ error: error.message, loading: false });
         }
@@ -67,11 +68,29 @@ export const useCartStore = create((set, get) => ({
         return get().items.reduce((total, item) => total + (item.quantity || 0), 0);
     },
 
-    // Tổng giá trị giỏ hàng
+    // Tổng giá trị giỏ hàng (giá gốc)
     getTotalPrice: () => {
         return get().items.reduce(
             (total, item) => total + (item.price || 0) * (item.quantity || 0),
             0
         );
     },
+
+    // Tổng giá trị sau giảm giá
+    getTotalAfterDiscount: () => {
+        return get().items.reduce((total, item) => {
+            const finalPrice = item.final_price || item.price;
+            return total + (finalPrice * item.quantity);
+        }, 0);
+    },
+
+    // Tổng tiền giảm giá
+    getTotalDiscount: () => {
+        return get().items.reduce((total, item) => {
+            const discount = item.total_discount || 0;
+            return total + (discount * item.quantity);
+        }, 0);
+    },
+
+  
 })); 
