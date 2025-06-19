@@ -109,6 +109,12 @@ function Header() {
                       </button>
                     )}
                     <button
+                      className="w-full text-left text-sm px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                      onClick={() => { navigate("/user");}}
+                    >
+                      Thông tin tài khoản
+                    </button>
+                    <button
                       className="w-full text-left text-sm px-4 py-2 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 transition"
                       onClick={() => {
                         logout();

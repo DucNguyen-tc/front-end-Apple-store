@@ -21,6 +21,12 @@ export const updateUser = async (id, user) => {
     return res.json();
 }
 
+export const getUserById = async (id) => {
+    const res = await authFetch(`${API_BASE_URL}/users/${id}`);
+    if (!res.ok) throw new Error('Không lấy được thông tin người dùng');
+    return res.json();
+};
+
 // Xoá người dùng
 export const deletedUser = async (id) => {
     const res = await authFetch(`${API_BASE_URL}/users/${id}`, {

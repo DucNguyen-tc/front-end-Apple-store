@@ -161,7 +161,7 @@ export default function ProductDetail() {
         {/* Thông tin sản phẩm */}
         <div>
           {/* {console.log('Product detail:', product)} */}
-          <h1 className="text-3xl font-bold mb-2">{product.Name}</h1>
+          <h1 className="text-3xl font-bold mb-2">{selectedVariant.name}</h1>
           <p className="mb-4 text-gray-600">{product.description}</p>
 
           {/* Lựa chọn dung lượng */}
