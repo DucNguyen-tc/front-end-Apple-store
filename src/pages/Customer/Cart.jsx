@@ -71,7 +71,7 @@ const Cart = () => {
               />
               <div>
                 <h3 className="font-semibold">{item.variant_name}</h3>
-                <p className="text-gray-600">${item.price}</p>
+                <p className="text-gray-600">{item.price}</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -105,13 +105,13 @@ const Cart = () => {
       <div className="mt-8 border-t pt-4">
         <div className="flex justify-between items-center mb-2">
           <span className="text-lg">Tổng tiền hàng (giá gốc):</span>
-          <span className="text-lg">${getTotalPrice().toFixed(2)}</span>
+          <span className="text-lg">{getTotalPrice().toFixed(2)}</span>
         </div>
         {getTotalDiscount() > 0 && (
           <>
             <div className="flex justify-between items-center mb-2 text-green-600">
               <span>Tổng tiền giảm giá:</span>
-              <span>-${getTotalDiscount().toFixed(2)}</span>
+              <span>-{getTotalDiscount().toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center mb-2 text-green-600">
               <span>Tỷ lệ giảm giá:</span>
@@ -122,7 +122,7 @@ const Cart = () => {
         <div className="flex justify-between items-center mb-4">
           <span className="text-xl font-semibold">Số tiền phải trả:</span>
           <span className="text-xl font-bold text-blue-600">
-            ${getTotalAfterDiscount().toFixed(2)}
+            {getTotalAfterDiscount().toFixed(2)}
           </span>
         </div>
         <div className="flex justify-end space-x-4">
