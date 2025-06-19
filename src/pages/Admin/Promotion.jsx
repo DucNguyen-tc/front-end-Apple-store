@@ -252,6 +252,7 @@ export default function Promotion() {
               <Option value="flat_discount">Số tiền (VNĐ)</Option>
             </Select>
           </Form.Item>
+
           <Form.Item
             label="Ngày bắt đầu"
             name="start_date"
@@ -261,17 +262,55 @@ export default function Promotion() {
               className="w-full"
               format="YYYY-MM-DD HH:mm:ss"
               showTime={{ format: "HH:mm:ss" }}
+              disabledDate={(current) =>
+                current && current < dayjs().startOf("day")
+              }
+              disabledTime={(current) => {
+                const now = dayjs();
+                if (
+                  !current ||
+                  current.format("YYYY-MM-DD") !== now.format("YYYY-MM-DD")
+                ) {
+                  return {};
+                }
+
+                // Nếu chọn đúng hôm nay → chặn giờ, phút, giây đã qua
+                return {
+                  disabledHours: () =>
+                    Array.from({ length: now.hour() }, (_, i) => i),
+                  disabledMinutes: () =>
+                    Array.from({ length: now.minute() }, (_, i) => i),
+                  disabledSeconds: () =>
+                    Array.from({ length: now.second() }, (_, i) => i),
+                };
+              }}
             />
           </Form.Item>
           <Form.Item
             label="Ngày kết thúc"
             name="end_date"
-            rules={[{ required: true, message: "Chọn ngày kết thúc" }]}
+            rules={[
+              { required: true, message: "Chọn ngày kết thúc" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const start = getFieldValue("start_date");
+                  if (!value || !start || dayjs(value).isAfter(dayjs(start))) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(
+                    new Error("Ngày kết thúc phải sau ngày bắt đầu")
+                  );
+                },
+              }),
+            ]}
           >
             <DatePicker
               className="w-full"
               format="YYYY-MM-DD HH:mm:ss"
               showTime={{ format: "HH:mm:ss" }}
+              disabledDate={(current) =>
+                current && current < dayjs().startOf("day")
+              }
             />
           </Form.Item>
           <Form.Item

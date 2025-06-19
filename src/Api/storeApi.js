@@ -1,5 +1,5 @@
 import { authFetch } from "./authFetch";
-const API_BASE_URL = "http://localhost:4000/api";
+const API_BASE_URL = "http://localhost:3000/api";
 
 // Lấy tất cả cửa hàng
 export const getAllStores = async () => {

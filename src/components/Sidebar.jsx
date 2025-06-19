@@ -77,7 +77,9 @@ function Sidebar() {
         },
         {
           key: "/admin/variants",
-          label: <Link to="/admin/product-promotions">Sản phẩm khuyến mãi</Link>,
+          label: (
+            <Link to="/admin/product-promotions">Sản phẩm khuyến mãi</Link>
+          ),
         },
       ],
     },
@@ -95,6 +97,8 @@ function Sidebar() {
         top: 0,
         height: "100vh",
         zIndex: 100,
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       <div className="font-bold text-xl pl-6 pt-8 pb-4 text-blue-900 tracking-wide">
@@ -107,9 +111,16 @@ function Sidebar() {
         defaultOpenKeys={openKeys}
         selectedKeys={[location.pathname]}
         className="custom-sidebar-menu"
-        style={{ fontSize: 16, background: "#fff" }}
-        items={menuItems} // Use the items prop
+        style={{ fontSize: 16, background: "#fff", flex: 1 }}
+        items={menuItems}
       />
+
+      <div style={{ marginTop: "auto", paddingLeft: 40, borderTop: "1px solid #f0f0f0", paddingTop: 24 }}>
+        <Link to="/" className="text-blue-600 hover:underline">
+          <DashboardOutlined style={{ marginRight: 8 }} />
+          Về trang khách hàng
+        </Link>
+      </div>
     </Sider>
   );
 }

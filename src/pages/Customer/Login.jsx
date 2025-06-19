@@ -42,6 +42,7 @@ const Login = () => {
           password: values.password,
         });
         alert("Đăng nhập thành công");
+        console.log(response)
         setUser(response.user);
         localStorage.setItem("accessToken", response.accessToken);
         localStorage.setItem("refreshToken", response.refreshToken);
