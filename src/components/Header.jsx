@@ -108,6 +108,20 @@ function Header() {
                         Chuyển tới trang admin
                       </button>
                     )}
+                    <Link to="/profile">
+                      <button
+                        className="w-full text-left text-sm px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                      >
+                        Thông tin tài khoản
+                      </button>
+                    </Link>
+                    <Link to="/orders">
+                      <button
+                        className="w-full text-left text-sm px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
+                      >
+                        Đơn hàng của tôi
+                      </button>
+                    </Link>
                     <button
                       className="w-full text-left text-sm px-4 py-2 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition"
                       onClick={() => { navigate("/user");}}

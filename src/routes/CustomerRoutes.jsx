@@ -4,8 +4,9 @@ import Home from "../pages/Customer/Home";
 import Login from "../pages/Customer/Login";
 import ProductPage from "../pages/Customer/Product";
 import Cart from "../pages/Customer/Cart";
-import ProductDetail from "../pages/Customer/Productdetail";
-import UserProfile from "../pages/Customer/UserProfile";
+import Checkout from "../pages/Customer/Checkout";
+import Orders from "../pages/Customer/Orders";
+
 
 function CustomerRoutes() {
   return (
@@ -15,9 +16,8 @@ function CustomerRoutes() {
         <Route path="/login" element={<Login />} />
         <Route path="/category/:name/:id" element={<ProductPage />} />
         <Route path="/cart" element={<Cart />} />
-        <Route path="/product/:id" element={<ProductDetail />} />
-        <Route path="/user" element={<UserProfile />} />
-        {/* Thêm các route khác nếu cần */}
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/orders" element={<Orders />} />
       </Route>
     </Routes>
   );

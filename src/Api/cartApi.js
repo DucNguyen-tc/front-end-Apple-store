@@ -1,6 +1,6 @@
 import { authFetch } from './authFetch';
 
-const BASE_URL = 'http://localhost:3000/api/cart-items';
+const BASE_URL = 'http://localhost:4000/api/cart-items';
 
 export const cartApi = {
     // Lấy giỏ hàng của user
