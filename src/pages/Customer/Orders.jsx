@@ -111,7 +111,7 @@ export default function Orders() {
                         <tr className="bg-[#eaf6ff]">
                           <th className="py-2 px-2 text-left">Sản phẩm</th>
                           <th className="py-2 px-2 text-center">Số lượng</th>
-                          <th className="py-2 px-2 text-right">Thành tiền</th>
+                    
                         </tr>
                       </thead>
                       <tbody>
@@ -119,9 +119,17 @@ export default function Orders() {
                           <tr key={item.id} className="border-b">
                             <td className="py-2 px-2">{item.variant_name}</td>
                             <td className="py-2 px-2 text-center">{item.quantity}</td>
-                            <td className="py-2 px-2 text-right">{item.total_amount.toLocaleString()}₫</td>
+                    
                           </tr>
                         ))}
+                        <tr>
+                          <td colSpan={2} className="pt-4 text-right font-semibold text-base">
+                            Thành tiền:{" "}
+                            <span className="text-[#0071e3]">
+                              {orderItems.reduce((sum, item) => sum +Number  (item.total_amount || 0), 0).toLocaleString()}₫
+                            </span>
+                          </td>
+                        </tr>
                       </tbody>
                     </table>
                   ) : (
